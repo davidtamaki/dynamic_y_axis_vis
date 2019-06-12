@@ -22,21 +22,8 @@ looker.plugins.visualizations.add({
     }
   },
 
-  // Set up the initial state of the visualization
+  // Set up the initial state of the visualization / CSS if required
   create: function(element, config) {
-
-    // if needed, can set css here
-    // var css = `
-    //   <style> 
-    // body {
-    //   font: 10px sans-serif;
-    // }
-    //   </style> `;
-    // element.innerHTML = css;
-    // var container = element.appendChild(document.createElement("div")); // Create a container element to let us center the text.
-    // this.container = container
-    // container.className = "highchart-vis";
-    // this._textElement = container.appendChild(document.createElement("div")); // Create an element to contain the text.
   },
 
 
