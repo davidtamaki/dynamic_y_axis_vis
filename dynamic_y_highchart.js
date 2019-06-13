@@ -17,8 +17,18 @@ looker.plugins.visualizations.add({
       order: 2,
       type: "array",
       label: "Color Range",
-      display: "colors",
-      default: ["#9E0041", "#C32F4B", "#E1514B", "#F47245", "#FB9F59", "#FEC574", "#FAE38C", "#EAF195", "#C7E89E", "#9CD6A4", "#6CC4A4", "#4D9DB4", "#4776B4", "#5E4EA1"]
+      display: "colors"
+    },
+    plot_null: {
+      order: 3,
+      type: "string",
+      label: "Plot Null Values",
+      display: "radio",
+      values: [
+        { "Yes": true},
+        { "No": false}
+      ],
+      default: true
     }
   },
 
@@ -35,28 +45,39 @@ looker.plugins.visualizations.add({
     if (!handleErrors(this, queryResponse, { 
       min_pivots: 0, max_pivots: 0, 
       min_dimensions: 1, max_dimensions: 1, 
-      min_measures: 1, max_measures: 10})) {
+      min_measures: 1, max_measures: 99})) {
       return;
     }
-
+    
     var dimension = queryResponse.fields.dimension_like[0].name, measure_count = queryResponse.fields.measure_like.length,
       series = [], x = [], all_series = [];
 
     for (let i = 0; i < measure_count; i++) {
       series[i] = {}
-      series[i]['name'] = queryResponse.fields.measure_like[i].name;
+      series[i]['name'] = queryResponse.fields.measure_like[i].label;
+      series[i]['field_name'] = queryResponse.fields.measure_like[i].name;
       series[i]['data'] = []
     }
-
+    
     for (let i = 0; i < data.length; i++) {
       x.push(data[i][dimension].value); 
       for (let j = 0; j < measure_count; j++) {
-        series[j]['data'].push(data[i][series[j]['name']].value);
-        all_series.push(data[i][series[j]['name']].value);
+        let datapoint = data[i][series[j]['field_name']].value; 
+        if (config.plot_null && !datapoint) { // plot nulls as zero
+          series[j]['data'].push(0);
+        } else {
+          series[j]['data'].push(datapoint);
+          all_series.push(datapoint); // skip nulls
+        }
       }
     } 
 
-    var minX = Math.min( ...all_series)*.9, maxX = Math.max( ...all_series)*1.1
+    var minX = Math.min( ...all_series)*.9, maxX = Math.max( ...all_series)*1.1;
+
+    console.log(data)
+    console.log(series)
+    console.log(minX)
+    console.log(maxX)
 
     Highcharts.chart('vis', {
         colors: config.color_range,
@@ -67,13 +88,18 @@ looker.plugins.visualizations.add({
           // dateTimeLabelFormats: {} // TODO - format dates
         },
         yAxis: {
-            endOnTick: false,
-            maxPadding: 0.2,
-            ceiling: maxX,
-            floor: minX,
-            title: { text: null }
+          endOnTick: false,
+          maxPadding: 0.2,
+          ceiling: maxX,
+          floor: minX,
+          title: { text: null }
         },
         series: series,
+        plotOptions: {
+          series: {
+            marker: { enabled: false }
+          }
+        },
         credits: { enabled: false }
     });
 
