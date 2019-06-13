@@ -17,7 +17,8 @@ looker.plugins.visualizations.add({
       order: 2,
       type: "array",
       label: "Color Range",
-      display: "colors"
+      display: "colors",
+      default: ["#9E0041", "#C32F4B", "#E1514B", "#F47245", "#FB9F59", "#FEC574", "#FAE38C", "#EAF195", "#C7E89E", "#9CD6A4", "#6CC4A4", "#4D9DB4", "#4776B4", "#5E4EA1"]
     },
     plot_null: {
       order: 3,
@@ -74,18 +75,13 @@ looker.plugins.visualizations.add({
 
     var minX = Math.min( ...all_series)*.9, maxX = Math.max( ...all_series)*1.1;
 
-    console.log(data)
-    console.log(series)
-    console.log(minX)
-    console.log(maxX)
-
     Highcharts.chart('vis', {
         colors: config.color_range,
         chart: { type: config.chart_type },
         title: { text: null },
         xAxis: { 
           categories: x
-          // dateTimeLabelFormats: {} // TODO - format dates
+          // dateTimeLabelFormats: {} // TODO - format dates and sort
         },
         yAxis: {
           endOnTick: false,
