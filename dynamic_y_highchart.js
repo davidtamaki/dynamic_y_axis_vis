@@ -1,6 +1,7 @@
 looker.plugins.visualizations.add({
   options: {
     chart_type: {
+      section: "Data",
       order: 1,
       type: "string",
       label: "Chart Type",
@@ -14,6 +15,7 @@ looker.plugins.visualizations.add({
       default: "line"
     },
     color_range: {
+      section: "Data",
       order: 2,
       type: "array",
       label: "Color Range",
@@ -21,6 +23,7 @@ looker.plugins.visualizations.add({
       default: ["#9E0041", "#C32F4B", "#E1514B", "#F47245", "#FB9F59", "#FEC574", "#FAE38C", "#EAF195", "#C7E89E", "#9CD6A4", "#6CC4A4", "#4D9DB4", "#4776B4", "#5E4EA1"]
     },
     plot_null: {
+      section: "Data",
       order: 3,
       type: "string",
       label: "Plot Null Values",
@@ -30,6 +33,51 @@ looker.plugins.visualizations.add({
         { "No": false}
       ],
       default: true
+    },
+    range_scale: {
+      section: "Data",
+      order: 4,
+      type: "number",
+      label: "Y-Axis Range Scale",
+      display: "number",
+      default: .02
+    },
+    x_axis_label: {
+      section: "Format",
+      order: 1,
+      type: "string",
+      label: "X Axis Label"
+    },
+    y_axis_label: {
+      section: "Format",
+      order: 2,
+      type: "string",
+      label: "Y Axis Label"
+    },
+    show_legend: {
+      section: "Format",
+      order: 3,
+      type: "string",
+      label: "Show Legend",
+      display: "radio",
+      values: [
+        { "Yes": true},
+        { "No": false}
+      ],
+      default: true
+    },
+    point_style: {
+      section: "Format",
+      order: 4,
+      type: "string",
+      label: "Point Style",
+      display: "radio",
+      values: [
+        { "None": "none"},
+        { "Filled": "filled"},
+        { "Outline": "outline"}
+      ],
+      default: "none"
     }
   },
 
@@ -57,7 +105,8 @@ looker.plugins.visualizations.add({
       series[i] = {}
       series[i]['name'] = queryResponse.fields.measure_like[i].label;
       series[i]['field_name'] = queryResponse.fields.measure_like[i].name;
-      series[i]['data'] = []
+      series[i]['data'] = [];
+      series[i]['marker'] = { "symbol": "circle" };
     }
     
     for (let i = 0; i < data.length; i++) {
@@ -73,14 +122,36 @@ looker.plugins.visualizations.add({
       }
     } 
 
-    var minX = Math.min( ...all_series)*.9, maxX = Math.max( ...all_series)*1.1;
+    var minX = Math.min( ...all_series)*(1-config.range_scale), 
+      maxX = Math.max( ...all_series)*(1+config.range_scale);
 
-    Highcharts.chart('vis', {
+    var marker = {}
+    if (config.point_style == "outline") {
+      marker.fillColor = '#FFFFFF';
+      marker.lineWidth = 2;
+      marker.lineColor = null;      
+    } else if (config.point_style == "filled") {
+      marker.lineWidth = 2;
+      marker.lineColor = null;
+    } else {
+      marker.enabled = false;
+    }
+
+    var chart = Highcharts.chart('vis', {
         colors: config.color_range,
-        chart: { type: config.chart_type },
+        chart: { 
+          type: config.chart_type,
+          spacing: [0,0,0,0]
+        },
         title: { text: null },
+        legend: { enabled: config.show_legend },
         xAxis: { 
-          categories: x
+          labels: {
+            formatter: function(){
+              return x[this.value];
+            }
+          },
+          title: { text: config.x_axis_label }
           // dateTimeLabelFormats: {} // TODO - format dates and sort
         },
         yAxis: {
@@ -88,17 +159,19 @@ looker.plugins.visualizations.add({
           maxPadding: 0.2,
           ceiling: maxX,
           floor: minX,
-          title: { text: null }
+          title: { text: config.y_axis_label }
         },
         series: series,
         plotOptions: {
-          series: {
-            marker: { enabled: false }
-          }
+          series: { marker: marker }
         },
         credits: { enabled: false }
     });
 
+    // console.log(chart)
+
+
+    // Helper functions
     function handleErrors(vis, res, options) {
       var check = function (group, noun, count, min, max) {
           if (!vis.addError || !vis.clearErrors) {
