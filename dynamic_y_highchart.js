@@ -99,25 +99,39 @@ looker.plugins.visualizations.add({
     }
     
     var dimension = queryResponse.fields.dimension_like[0].name, measure_count = queryResponse.fields.measure_like.length,
-      series = [], x = [], all_series = [];
+      x_label = queryResponse.fields.dimension_like[0].label_short, series = [], x = [], all_series = [];
 
     for (let i = 0; i < measure_count; i++) {
       series[i] = {}
       series[i]['name'] = queryResponse.fields.measure_like[i].label;
       series[i]['field_name'] = queryResponse.fields.measure_like[i].name;
       series[i]['data'] = [];
+      series[i]['rendered_data'] = [];
       series[i]['marker'] = { "symbol": "circle" };
+      series[i]['drill_label'] = [];
+      series[i]['drill_url'] = [];
     }
     
+    // console.log(queryResponse)
+    // console.log(data)
+
     for (let i = 0; i < data.length; i++) {
-      x.push(data[i][dimension].value); 
-      for (let j = 0; j < measure_count; j++) {
-        let datapoint = data[i][series[j]['field_name']].value; 
-        if (config.plot_null && !datapoint) { // plot nulls as zero
+      x.push(data[i][dimension].value); // x-axis (need to format)
+      for (let j = 0; j < measure_count; j++) { // push values to each series
+        let datapoint = data[i][series[j]['field_name']];
+        if (datapoint.links) {
+          dl = data[i][series[j]['field_name']].links[0].label,
+          url = data[i][series[j]['field_name']].links[0].url;
+          series[j]['drill_label'].push(dl);
+          series[j]['drill_url'].push(url);
+        }
+        if (config.plot_null && !datapoint.value) { // plot nulls as zero
           series[j]['data'].push(0);
+          series[j]['rendered_data'].push(0);
         } else {
-          series[j]['data'].push(datapoint);
-          all_series.push(datapoint); // skip nulls
+          series[j]['data'].push(datapoint.value);
+          series[j]['rendered_data'].push(datapoint.rendered);
+          all_series.push(datapoint.value); // skip nulls
         }
       }
     } 
@@ -137,22 +151,33 @@ looker.plugins.visualizations.add({
       marker.enabled = false;
     }
 
+    // console.log(x)
+    // console.log(series)
+
     var chart = Highcharts.chart('vis', {
         colors: config.color_range,
         chart: { 
           type: config.chart_type,
-          spacing: [0,0,0,0]
+          spacing: [0,0,0,0],
+          zoomType: 'xy'
         },
         title: { text: null },
         legend: { enabled: config.show_legend },
-        xAxis: { 
+        tooltip: {
+          useHTML: true,
+          formatter: function() {
+            // console.log(this)
+            return  x_label + "<br><b>" + x[this.key] + "</b><br><br>" + this.series.name + "<br><b>" + this.series.userOptions.rendered_data[this.x] + " </b>";
+          }
+        },
+        xAxis: {
+          type: 'datetime',
           labels: {
             formatter: function(){
               return x[this.value];
             }
           },
           title: { text: config.x_axis_label }
-          // dateTimeLabelFormats: {} // TODO - format dates and sort
         },
         yAxis: {
           endOnTick: false,
@@ -163,7 +188,29 @@ looker.plugins.visualizations.add({
         },
         series: series,
         plotOptions: {
-          series: { marker: marker }
+          series: { 
+            marker: marker,
+            cursor: 'pointer',
+            point: {
+              events: {
+                click: function(event) {
+                  // console.log(event.point.series.userOptions);
+                  // console.log(event.point.x);
+                  if (event.point.series.userOptions.drill_url.length) {
+                    let link = [{
+                        url: event.point.series.userOptions.drill_url[event.point.x],
+                        label: event.point.series.userOptions.drill_label[event.point.x],
+                        type: 'explore'
+                    }];
+                    LookerCharts.Utils.openDrillMenu({
+                      links: link,
+                      event: event,
+                    });
+                  }
+                }
+              }
+            }
+          }
         },
         credits: { enabled: false }
     });
