@@ -1,6 +1,11 @@
 # Dynamic Y-Axis Custom Visualisation for Looker
 
-Example of a custom visualisation that can unpin the Y-axis from zero and be dynamically scaled. This chart is built using Highcharts library, check out there [API](https://api.highcharts.com/highcharts/) to add any custom configuration. 
+Example of a custom visualisation that can unpin the Y-axis from zero and be dynamically scaled. This chart is built using Highcharts library, check out their [API](https://api.highcharts.com/highcharts/) to add any custom configuration.
+
+## Features:
+- Area, Bar, Column, and Line charts
+- X/Y Axis labels, legend, point style
+- Zooming, Tooltip hover, and [drilling](https://docs.looker.com/reference/field-params/drill_fields)
 
 ## Example
 ![Screenshot](https://github.com/davidtamaki/dynamic_y_axis_vis/blob/master/screen-shots/dynamic_y_example.gif)
