@@ -108,8 +108,7 @@ looker.plugins.visualizations.add({
       series[i]['data'] = [];
       series[i]['rendered_data'] = [];
       series[i]['marker'] = { "symbol": "circle" };
-      series[i]['drill_label'] = [];
-      series[i]['drill_url'] = [];
+      series[i]['links'] = [];
     }
     
     // console.log(queryResponse)
@@ -120,10 +119,7 @@ looker.plugins.visualizations.add({
       for (let j = 0; j < measure_count; j++) { // push values to each series
         let datapoint = data[i][series[j]['field_name']];
         if (datapoint.links) {
-          dl = data[i][series[j]['field_name']].links[0].label,
-          url = data[i][series[j]['field_name']].links[0].url;
-          series[j]['drill_label'].push(dl);
-          series[j]['drill_url'].push(url);
+          series[j]['links'].push(data[i][series[j]['field_name']].links) // add array of link/drill objects  
         }
         if (config.plot_null && !datapoint.value) { // plot nulls as zero
           series[j]['data'].push(0);
@@ -167,7 +163,8 @@ looker.plugins.visualizations.add({
           useHTML: true,
           formatter: function() {
             // console.log(this)
-            return  x_label + "<br><b>" + x[this.key] + "</b><br><br>" + this.series.name + "<br><b>" + this.series.userOptions.rendered_data[this.x] + " </b>";
+            let x_value = this.series.userOptions.rendered_data[this.x] || this.series.userOptions.data[this.x] // coalesce nulls in rendered_data
+            return  x_label + "<br><b>" + x[this.key] + "</b><br><br>" + this.series.name + "<br><b>" + x_value + " </b>";
           }
         },
         xAxis: {
@@ -196,14 +193,9 @@ looker.plugins.visualizations.add({
                 click: function(event) {
                   // console.log(event.point.series.userOptions);
                   // console.log(event.point.x);
-                  if (event.point.series.userOptions.drill_url.length) {
-                    let link = [{
-                        url: event.point.series.userOptions.drill_url[event.point.x],
-                        label: event.point.series.userOptions.drill_label[event.point.x],
-                        type: 'explore'
-                    }];
+                  if (event.point.series.userOptions.links.length) {
                     LookerCharts.Utils.openDrillMenu({
-                      links: link,
+                      links: event.point.series.userOptions.links[event.point.x],
                       event: event,
                     });
                   }
